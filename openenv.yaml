@@ -1,0 +1,113 @@
+# OpenEnv Manifest — ESG-Audit-Gym
+# =================================
+spec_version: 1
+name: MetricTrace-Gym
+
+environment:
+  name: MetricTrace-Gym
+  display_name: "ESG-Audit-Gym"
+  version: "1.0.0"
+  description: >
+    An OpenEnv-compliant reinforcement learning environment where an AI
+    agent acts as a Sustainability Auditor. The agent navigates a simulated
+    corporate ESG report, extracts environmental/social/governance metrics,
+    and validates them against the CSRD/ISSB regulatory framework.
+
+  authors:
+    - name: "ESG-Audit-Gym Team"
+
+  tags:
+    - esg
+    - sustainability
+    - audit
+    - compliance
+    - csrd
+    - issb
+    - greenwashing
+
+# ── Component Paths ─────────────────────────────────────────────────────
+components:
+  models: models.py
+  client: client.py
+  server:
+    app: server/app.py
+    environment: server/environment.py
+    dockerfile: server/Dockerfile
+
+# ── Inference ───────────────────────────────────────────────────────────
+inference:
+  script: inference.py
+  env_vars:
+    - API_BASE_URL
+    - MODEL_NAME
+    - HF_TOKEN
+    - ENV_BASE_URL
+
+# ── Tasks ───────────────────────────────────────────────────────────────
+tasks:
+  - id: easy_water_consumption
+    name: "Extract Total Water Consumption"
+    difficulty: easy
+    description: >
+      Extract the explicitly labeled 'Total Water Consumption' KPI for
+      FY2024 from a structured table in the sustainability report.
+    max_steps: 10
+
+  - id: medium_scope1_aggregation
+    name: "Aggregate Scope 1 Emissions"
+    difficulty: medium
+    description: >
+      Aggregate Scope 1 GHG emissions from multiple unstructured tables
+      across the report, handling unit normalization (kg → metric tons).
+    max_steps: 15
+
+  - id: hard_greenwashing_detection
+    name: "Detect Greenwashing Discrepancy"
+    difficulty: hard
+    description: >
+      Cross-validate the CEO's narrative claim of a '10% reduction in
+      emissions' against quantitative data to identify greenwashing.
+    max_steps: 20
+
+# ── Action Space ────────────────────────────────────────────────────────
+action_space:
+  type: structured
+  actions:
+    - name: search_page
+      description: "Navigate to a page by keyword query or page number."
+      args:
+        query: { type: string, optional: true }
+        page_number: { type: integer, optional: true }
+
+    - name: extract_table
+      description: "Extract a structured table from the current page."
+      args:
+        table_index: { type: integer, default: 0 }
+
+    - name: submit_finding
+      description: "Submit an audited ESG finding for grading."
+      args:
+        metric_name: { type: string, required: true }
+        value: { type: number, required: true }
+        unit: { type: string, required: true }
+        evidence_pages: { type: "array[integer]", optional: true }
+        discrepancy_detected: { type: boolean, optional: true }
+        narrative_assessment: { type: string, optional: true }
+
+# ── Reward ──────────────────────────────────────────────────────────────
+reward:
+  type: dense
+  range: [-0.10, 1.0]
+  description: >
+    Potential-based dense rewards. Partial credit for navigation and
+    extraction (+0.05–0.15). Graded submission rewards (+0.10–0.35).
+    Penalties for invalid actions (−0.05).
+
+# ── Grading ─────────────────────────────────────────────────────────────
+grading:
+  type: programmatic
+  deterministic: true
+  score_range: [0.0, 1.0]
+  description: >
+    All scores computed deterministically via code-based verification.
+    No LLM-based grading. Numeric tolerance and fuzzy metric-name matching.
