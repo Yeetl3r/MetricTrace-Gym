@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import logging
 import traceback
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import RedirectResponse
@@ -37,7 +37,7 @@ logging.basicConfig(
 # ── Request / Response Schemas ──────────────────────────────────────────
 
 class ResetRequest(BaseModel):
-    task_id: str = Field(..., description="Task identifier to start.")
+    task_id: Optional[str] = Field(None, description="Task identifier to start.")
 
 
 class StepResponse(BaseModel):
@@ -127,12 +127,15 @@ def create_app() -> FastAPI:
 
     # ── Reset ──
     @app.post("/reset", response_model=Observation, tags=["environment"])
-    async def reset(request: ResetRequest) -> Observation:
+    async def reset(request: Optional[ResetRequest] = None) -> Observation:
         try:
-            obs = env.reset(task_id=request.task_id)
+            # Default to easy task if grader sends empty body
+            target_task = request.task_id if request and request.task_id else "easy_water_consumption"
+            
+            obs = env.reset(task_id=target_task)
             logger.info(
                 "Episode reset | task=%s difficulty=%s",
-                request.task_id,
+                target_task,
                 obs.task_difficulty,
             )
             return obs
