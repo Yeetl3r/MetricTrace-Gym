@@ -212,7 +212,7 @@ def run_task(
     """Run a single task episode and return results."""
 
     # ── Log header ──
-    print(f"task={task_id} env=MetricTrace-Gym model={model_name}")
+    print(f"[START] task={task_id} env=MetricTrace-Gym model={model_name}", flush=True)
 
     obs = env_client.reset(task_id=task_id)
 
@@ -255,7 +255,7 @@ def run_task(
             )
         except Exception as exc:
             last_error = f"LLM API error: {exc}"
-            print(f"step={step_count + 1} action=error reward=0.00 done=false error={last_error}")
+            print(f"[STEP] step={step_count + 1} action=error reward=0.00 done=false error={last_error}", flush=True)
             break
 
         choice = response.choices[0]
@@ -282,7 +282,7 @@ def run_task(
             arguments = json.loads(tool_call.function.arguments)
         except json.JSONDecodeError as exc:
             last_error = f"JSON parse error in tool arguments: {exc}"
-            print(f"step={step_count + 1} action={func_name} reward=-0.05 done=false error={last_error}")
+            print(f"[STEP] step={step_count + 1} action={func_name} reward=-0.05 done=false error={last_error}", flush=True)
             messages.append(safe_msg)
             messages.append({
                 "role": "tool",
@@ -295,7 +295,7 @@ def run_task(
             action = tool_call_to_action(func_name, arguments)
         except Exception as exc:
             last_error = f"Action conversion error: {exc}"
-            print(f"step={step_count + 1} action={func_name} reward=-0.05 done=false error={last_error}")
+            print(f"[STEP] step={step_count + 1} action={func_name} reward=-0.05 done=false error={last_error}", flush=True)
             messages.append(safe_msg)
             messages.append({
                 "role": "tool",
@@ -309,7 +309,7 @@ def run_task(
             obs, reward, done, info = env_client.step(action)
         except Exception as exc:
             last_error = f"Environment step error: {exc}"
-            print(f"step={step_count + 1} action={func_name} reward=0.00 done=false error={last_error}")
+            print(f"[STEP] step={step_count + 1} action={func_name} reward=0.00 done=false error={last_error}", flush=True)
             break
 
         step_count += 1
@@ -319,9 +319,9 @@ def run_task(
         # ── Log step ──
         done_str = str(done).lower()
         print(
-            f"step={step_count} action={func_name} "
+            f"[STEP] step={step_count} action={func_name} "
             f"reward={reward:.2f} done={done_str} "
-            f"error={last_error or 'null'}"
+            f"error={last_error or 'null'}", flush=True
         )
 
         # Update conversation
@@ -337,8 +337,8 @@ def run_task(
     success_str = str(success).lower()
     rewards_str = ",".join(f"{r:.2f}" for r in rewards)
     print(
-        f"success={success_str} steps={step_count} "
-        f"score={obs.score:.3f} rewards={rewards_str}\n"
+        f"[END] task={task_id} success={success_str} steps={step_count} "
+        f"score={obs.score:.3f} rewards={rewards_str}", flush=True
     )
 
     return {
