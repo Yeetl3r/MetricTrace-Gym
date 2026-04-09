@@ -379,7 +379,7 @@ def main() -> None:
                 "task_id": task_id,
                 "success": False,
                 "steps": 0,
-                "score": 0.0,
+                "score": 0.001,
                 "rewards": [],
             })
 

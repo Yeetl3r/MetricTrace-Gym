@@ -446,7 +446,7 @@ class ESGAuditEnvironment:
             cumulative_reward=0.0,
             done=False,
             submitted=False,
-            final_score=0.0,
+            final_score=0.001,
             pages_visited=[],
             tables_extracted=[],
             correct_pages_found=False,
@@ -463,7 +463,7 @@ class ESGAuditEnvironment:
             available_pages=len(self._document_store),
             steps_taken=0,
             max_steps=task_config.max_steps,
-            score=0.0,
+            score=0.001,
             done=False,
             error=None,
         )
