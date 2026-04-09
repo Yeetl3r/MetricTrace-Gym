@@ -799,18 +799,18 @@ class ESGAuditEnvironment:
     # ═══════════════════════════════════════════════════════════════════════
 
     def _compute_score(self) -> float:
-        """Deterministic 0.0–1.0 score based on cumulative reward."""
+        """Deterministic score based on cumulative reward, clamped to (0, 1)."""
         if self._state is None:
-            return 0.0
+            return 0.001
         state = self._state
 
-        # Max possible reward varies by task but we normalise to 1.0
+        # Max possible reward varies by task but we normalise to ~1.0
         max_possible = self._max_possible_reward()
         if max_possible <= 0:
-            return 0.0
+            return 0.001
 
         raw = state.cumulative_reward / max_possible
-        return round(max(0.0, min(1.0, raw)), 3)
+        return round(max(0.001, min(0.999, raw)), 3)
 
     def _max_possible_reward(self) -> float:
         """Calculate the theoretical maximum reward for the current task."""
