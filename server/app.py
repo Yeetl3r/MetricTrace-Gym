@@ -16,7 +16,7 @@ import traceback
 from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ValidationError
 
@@ -33,6 +33,258 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
 )
 
+# ── Front-End Landing Page ──────────────────────────────────────────────
+
+LANDING_PAGE_HTML = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetricTrace-Gym</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Fira+Code&display=swap');
+        
+        :root {
+            --bg-dark: #0f172a;
+            --accent-green: #10b981;
+            --accent-blue: #3b82f6;
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-dark);
+            color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.15), transparent 40%),
+                        radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.15), transparent 40%);
+        }
+        .container {
+            max-width: 900px;
+            padding: 2rem;
+            width: 100%;
+            box-sizing: border-box;
+            z-index: 10;
+        }
+        .hero {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeIn 1s ease-out;
+        }
+        .title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
+        }
+        .subtitle {
+            font-size: 1.25rem;
+            color: #94a3b8;
+            line-height: 1.6;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: slideUp 1s ease-out 0.2s both;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+        .feature-card {
+            background: rgba(15, 23, 42, 0.5);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        .feature-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #e2e8f0;
+        }
+        .feature-desc {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+        .terminal {
+            background: #0f172a;
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'Fira Code', 'Monaco', monospace;
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-bottom: 2.5rem;
+            border: 1px solid #1e293b;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+            height: 150px;
+            overflow: hidden;
+            position: relative;
+        }
+        .terminal-header {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 1rem;
+        }
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .dot.red { background: #ef4444; }
+        .dot.yellow { background: #f59e0b; }
+        .dot.green { background: #10b981; }
+        .log-line {
+            margin-bottom: 0.5rem;
+            opacity: 0;
+            transform: translateY(10px);
+            animation: terminalLine 0.5s forwards;
+            color: #94a3b8;
+        }
+        .log-tag { color: #3b82f6; font-weight: bold; }
+        .log-value { color: #10b981; }
+        
+        @keyframes terminalLine {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .cta-container {
+            text-align: center;
+        }
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+            color: white;
+            padding: 1rem 2.5rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            text-decoration: none;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
+            border: none;
+            cursor: pointer;
+        }
+        .btn:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero">
+            <h1 class="title">MetricTrace-Gym</h1>
+            <p class="subtitle">An elite reinforcement learning environment where AI agents act as Sustainability Auditors, extracting and validating corporate ESG metrics against CSRD frameworks.</p>
+        </div>
+        
+        <div class="glass-panel">
+            <div class="features">
+                <div class="feature-card">
+                    <div class="feature-icon">🔍</div>
+                    <div class="feature-title">Multi-Page Mapping</div>
+                    <div class="feature-desc">Agents traverse synthetic 100+ page corporate reports via complex search tools.</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <div class="feature-title">Data Extraction</div>
+                    <div class="feature-desc">Dynamically process structured and unstructured matrices to aggregate metric footprints.</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🚨</div>
+                    <div class="feature-title">Anti-Greenwashing</div>
+                    <div class="feature-desc">Cross-validate CEO narrative claims against deep-document quantitative arrays deterministically.</div>
+                </div>
+            </div>
+            
+            <div class="terminal">
+                <div class="terminal-header">
+                    <div class="dot red"></div>
+                    <div class="dot yellow"></div>
+                    <div class="dot green"></div>
+                </div>
+                <div id="log-container">
+                    <!-- Logs injected via JS -->
+                </div>
+            </div>
+            
+            <div class="cta-container">
+                <a href="/docs" class="btn">View API Dashboard</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const logs = [
+            '<span class="log-tag">[START]</span> Initializing easy_water_consumption environment...',
+            '<span class="log-tag">[STEP]</span> action=search_page <span class="log-value">reward=0.10</span> done=False',
+            '<span class="log-tag">[STEP]</span> action=extract_table <span class="log-value">reward=0.15</span> done=False',
+            '<span class="log-tag">[STEP]</span> action=submit_finding <span class="log-value">reward=0.60</span> done=True',
+            '<span class="log-tag">[END]</span> task=easy_water_consumption <span class="log-value">success=true</span> score=0.850'
+        ];
+        
+        const container = document.getElementById('log-container');
+        let index = 0;
+        
+        function appendLog() {
+            if (index < logs.length) {
+                const div = document.createElement('div');
+                div.className = 'log-line';
+                div.innerHTML = logs[index];
+                container.appendChild(div);
+                index++;
+                setTimeout(appendLog, 800 + Math.random() * 800);
+            } else {
+                setTimeout(() => {
+                    container.innerHTML = '';
+                    index = 0;
+                    appendLog();
+                }, 3000);
+            }
+        }
+        
+        setTimeout(appendLog, 800);
+    </script>
+</body>
+</html>
+"""
 
 # ── Request / Response Schemas ──────────────────────────────────────────
 
@@ -84,8 +336,8 @@ def create_app() -> FastAPI:
 
     # ── Root / Web (Hugging Face UI Redirects) ──
     @app.get("/", include_in_schema=False)
-    async def root() -> RedirectResponse:
-        return RedirectResponse(url="/docs")
+    async def root() -> HTMLResponse:
+        return HTMLResponse(content=LANDING_PAGE_HTML, status_code=200)
 
     @app.get("/web", include_in_schema=False)
     async def web_ui() -> RedirectResponse:
