@@ -64,6 +64,7 @@ def create_app() -> FastAPI:
             "and validates them against CSRD/ISSB regulatory frameworks."
         ),
         version="1.0.0",
+        swagger_ui_parameters={"defaultModelsExpandDepth": -1},
     )
 
     app.add_middleware(
