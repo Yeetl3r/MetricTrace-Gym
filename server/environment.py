@@ -718,6 +718,9 @@ class ESGAuditEnvironment:
         if args is None:
             return -0.05, "", "submit_finding args missing"
 
+        if not math.isfinite(args.value):
+            return -0.05, "Rejected: Non-finite float value.", "Invalid numeric value metric"
+
         state = self._state
         gt = state.task_config.ground_truth
 

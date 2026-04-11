@@ -15,7 +15,7 @@ import logging
 import traceback
 from typing import Any, Dict, Optional
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Depends, Header
 from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ValidationError
@@ -327,7 +327,13 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    env = ESGAuditEnvironment()
+    environments: Dict[str, ESGAuditEnvironment] = {}
+
+    def get_env(request: Request) -> ESGAuditEnvironment:
+        session_id = request.headers.get("X-Session-Id", "default")
+        if session_id not in environments:
+            environments[session_id] = ESGAuditEnvironment()
+        return environments[session_id]
 
     # ── Health ──
     @app.get("/health", tags=["system"])
@@ -380,10 +386,10 @@ def create_app() -> FastAPI:
 
     # ── Reset ──
     @app.post("/reset", response_model=Observation, tags=["environment"])
-    async def reset(request: Optional[ResetRequest] = None) -> Observation:
+    async def reset(payload: Optional[ResetRequest] = None, env: ESGAuditEnvironment = Depends(get_env)) -> Observation:
         try:
             # Default to easy task if grader sends empty body
-            target_task = request.task_id if request and request.task_id else "easy_water_consumption"
+            target_task = payload.task_id if payload and payload.task_id else "easy_water_consumption"
             
             obs = env.reset(task_id=target_task)
             logger.info(
@@ -396,11 +402,11 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=400, detail=str(exc))
         except Exception as exc:
             logger.error("Reset error: %s\n%s", exc, traceback.format_exc())
-            raise HTTPException(status_code=500, detail=str(exc))
+            raise HTTPException(status_code=500, detail="Internal Server Error: Execution Failed")
 
     # ── Step ──
     @app.post("/step", response_model=StepResponse, tags=["environment"])
-    async def step(action: Action) -> StepResponse:
+    async def step(action: Action, env: ESGAuditEnvironment = Depends(get_env)) -> StepResponse:
         try:
             obs, reward, done, info = env.step(action)
             logger.info(
@@ -427,11 +433,11 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=400, detail=str(exc))
         except Exception as exc:
             logger.error("Step error: %s\n%s", exc, traceback.format_exc())
-            raise HTTPException(status_code=500, detail=str(exc))
+            raise HTTPException(status_code=500, detail="Internal Server Error: Execution Failed")
 
     # ── State ──
     @app.get("/state", response_model=State, tags=["environment"])
-    async def get_state() -> State:
+    async def get_state(env: ESGAuditEnvironment = Depends(get_env)) -> State:
         try:
             return env.state()
         except RuntimeError as exc:
