@@ -12,7 +12,6 @@ Implements the OpenEnv HTTP API with endpoints for:
 from __future__ import annotations
 
 import logging
-import traceback
 from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, HTTPException, Request, Depends, Header
@@ -401,7 +400,7 @@ def create_app() -> FastAPI:
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
         except Exception as exc:
-            logger.error("Reset error: %s\n%s", exc, traceback.format_exc())
+            logger.exception("Reset error: %s", exc)
             raise HTTPException(status_code=500, detail="Internal Server Error: Execution Failed")
 
     # ── Step ──
@@ -432,7 +431,7 @@ def create_app() -> FastAPI:
         except RuntimeError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
         except Exception as exc:
-            logger.error("Step error: %s\n%s", exc, traceback.format_exc())
+            logger.exception("Step error: %s", exc)
             raise HTTPException(status_code=500, detail="Internal Server Error: Execution Failed")
 
     # ── State ──

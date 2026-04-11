@@ -27,15 +27,17 @@ This environment trains RL agents to automate ESG report auditing — navigating
 ## 🏗️ Architecture
 
 ```
-esg_audit_gym/
+MetricTrace-Gym/
+├── pyproject.toml         # OpenEnv component constraints & entrypoints
+├── uv.lock                # Deterministic dependency resolution
 ├── models.py              # Pydantic Action, Observation, State models
 ├── client.py              # EnvClient HTTP wrapper
 ├── openenv.yaml           # OpenEnv manifest (spec_version: 1)
 ├── inference.py           # Baseline LLM agent with structured logging
 ├── server/
 │   ├── environment.py     # Core RL environment logic & grader
-│   ├── app.py             # FastAPI create_app factory
-│   └── Dockerfile         # Isolated execution container
+│   └── app.py             # FastAPI create_app factory & UI
+├── Dockerfile             # Unified root-level execution container
 └── README.md              # This file
 ```
 
@@ -138,13 +140,14 @@ A key design strength of ESG-Audit-Gym is **structured error recovery**. If an a
 ### 1. Install Dependencies
 
 ```bash
-pip install -r requirements.txt
+# This project uses `uv` for ultra-fast, strictly-locked dependency resolution
+uv sync
 ```
 
 ### 2. Start the Environment Server
 
 ```bash
-uvicorn esg_audit_gym.server.app:app --host 0.0.0.0 --port 8000
+uv run uvicorn server.app:app --host 0.0.0.0 --port 8000
 ```
 
 ### 3. Run the Baseline Agent
@@ -155,7 +158,7 @@ export MODEL_NAME="llama-3.3-70b-versatile"
 export GROQ_API_KEY="gsk_..."
 export ENV_BASE_URL="http://localhost:8000"
 
-python -m esg_audit_gym.inference
+uv run python inference.py
 ```
 
 ### 4. Baseline Scores (`llama-3.3-70b-versatile`)
@@ -170,9 +173,8 @@ Our baseline reference agent successfully navigates the environment, including r
 ### 5. Docker
 
 ```bash
-cd esg_audit_gym/server
-docker build -t esg-audit-gym .
-docker run -p 8000:8000 esg-audit-gym
+docker build -t metrictrace-gym .
+docker run -p 8000:8000 metrictrace-gym
 ```
 
 ---
@@ -182,11 +184,11 @@ docker run -p 8000:8000 esg-audit-gym
 The inference script emits structured stdout lines:
 
 ```
-task=easy_water_consumption env=esg_audit_gym model=gpt-4o
-step=1 action=search_page reward=0.10 done=False error=null
-step=2 action=extract_table reward=0.15 done=False error=null
-step=3 action=submit_finding reward=0.60 done=True error=null
-success=True steps=3 score=0.810 rewards=0.10,0.15,0.60
+[START] task=easy_water_consumption env=metrictrace-gym model=llama-3.3
+[STEP] step=1 action=search_page reward=0.10 done=False error=null
+[STEP] step=2 action=extract_table reward=0.15 done=False error=null
+[STEP] step=3 action=submit_finding reward=0.60 done=True error=null
+[END] task=easy_water_consumption success=True steps=3 score=0.810 rewards=0.10,0.15,0.60
 ```
 
 ---
@@ -194,7 +196,7 @@ success=True steps=3 score=0.810 rewards=0.10,0.15,0.60
 ## 🧪 Validation
 
 ```bash
-openenv validate esg_audit_gym/openenv.yaml
+openenv validate openenv.yaml
 ```
 
 ---
@@ -210,4 +212,4 @@ openenv validate esg_audit_gym/openenv.yaml
 
 ## 📄 License
 
-MIT License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

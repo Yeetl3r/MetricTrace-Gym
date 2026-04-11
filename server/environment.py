@@ -440,7 +440,7 @@ class ESGAuditEnvironment:
         task_config = copy.deepcopy(TASKS[task_id])
         self._state = State(
             task_config=task_config,
-            document_pages=copy.deepcopy(self._document_store),
+            document_pages=self._document_store,
             current_page_index=None,
             steps=[],
             cumulative_reward=0.0,

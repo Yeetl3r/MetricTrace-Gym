@@ -261,9 +261,10 @@ def run_task(
         choice = response.choices[0]
 
         # Groq strict API compatibility (strips unsupported OpenAI SDK keys)
-        safe_msg = choice.message.model_dump(exclude_none=True)
-        for key in ["annotations", "audio", "refusal", "function_call"]:
-            safe_msg.pop(key, None)
+        safe_msg = choice.message.model_dump(
+            exclude_none=True, 
+            exclude={"annotations", "audio", "refusal", "function_call"}
+        )
 
         # If the model doesn't call a tool, prompt it to act
         if not choice.message.tool_calls:
