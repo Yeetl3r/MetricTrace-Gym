@@ -205,8 +205,8 @@ openenv validate openenv.yaml
 
 - **CSRD**: [EU Corporate Sustainability Reporting Directive](https://finance.ec.europa.eu/capital-markets-union-and-financial-markets/company-reporting-and-auditing/company-reporting/corporate-sustainability-reporting_en)
 - **ISSB S1/S2**: [IFRS Sustainability Disclosure Standards](https://www.ifrs.org/issued-standards/ifrs-sustainability-standards-navigator/)
-- **ESRS**: European Sustainability Reporting Standards
-- **GHG Protocol**: Scope 1/2/3 emissions classification
+- **ESRS**: [European Sustainability Reporting Standards](https://www.efrag.org/lab6)
+- **GHG Protocol**: [Scope 1/2/3 emissions classification](https://ghgprotocol.org/)
 
 ---
 
